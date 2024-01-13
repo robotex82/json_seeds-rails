@@ -1,5 +1,24 @@
 module JsonSeeds
   module SeedService
+    # Specifying polymorphic associations:
+    #
+    # {
+    #   "account": [
+    #     {
+    #       "accountable.club.name": "1. TFC Frankfurt",
+    #       "name": "Mitgliedsbeiträge",
+    #       "number": "4400",
+    #       "kind": "revenue"
+    #     }
+    #   ]
+    # }
+    #
+    # The key is composed of three parts:
+    #
+    # 1. The association name
+    # 2. The type of the associated record (this will be passed to the model_name_map)
+    # 3. The attribute name that will be used to find the associated record
+    #
     class Base < Rao::Service::Base
       private
 
@@ -12,6 +31,7 @@ module JsonSeeds
             say "Seeding #{filename}"
             import(filename)
           end
+          after_import if respond_to?(:after_import, true)
         end
       end
 
@@ -113,8 +133,15 @@ module JsonSeeds
       end
 
       def associate(record, associated, value)
-        model_name, attribute_name = associated.split(".")
-        class_name, association_name = map_model_name(model_name)
+        splitted_associated = associated.split(".")
+        if splitted_associated.size == 3
+          attribute_name = splitted_associated.last
+          association_name = splitted_associated.first
+          class_name, _ = map_model_name(splitted_associated[1])
+        else
+          association_name, attribute_name = associated.split(".")
+          class_name, association_name = map_model_name(association_name)
+        end
         attribute = map_attribute_name(class_name, attribute_name)
         value = map_attribute_value(class_name, attribute_name, value)
         begin
